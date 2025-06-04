@@ -1,0 +1,83 @@
+
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Historie směn a statistiky</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="style.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="container">
+    <h1>📋 Historie směn</h1>
+
+    <section id="history-section">
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th><th>Řidič</th><th>Směna</th><th>Tržba</th><th>Km</th><th>Výplata</th><th>K odevzdání</th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+      <button onclick="downloadCSV()">Exportovat CSV</button>
+    </section>
+
+    <section id="stats-section">
+      <h2>📊 Statistiky</h2>
+      <canvas id="trzbyChart" width="400" height="200"></canvas>
+    </section>
+  </main>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem("vypocty") || "[]");
+
+    const tbody = document.getElementById("history-body");
+    function refreshTable() {
+      tbody.innerHTML = "";
+      data.forEach(entry => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${entry.datum}</td><td>${entry.ridic}</td><td>${entry.smena}</td><td>${entry.trzba}</td><td>${entry.km}</td><td>${entry.vyplata}</td><td>${entry.kOdevzdani}</td>`;
+        tbody.appendChild(row);
+      });
+    }
+    refreshTable();
+
+    function downloadCSV() {
+      const headers = ["Datum","Ridic","Směna","Tržba","Km","Výplata","K odevzdání"];
+      const csv = [headers.join(",")].concat(data.map(d => [d.datum, d.ridic, d.smena, d.trzba, d.km, d.vyplata, d.kOdevzdani].join(","))).join("\n");
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'vypocty.csv';
+      a.click();
+    }
+
+    const chartData = {
+      labels: data.map(d => d.datum),
+      datasets: [{
+        label: 'Tržba',
+        data: data.map(d => d.trzba),
+        borderWidth: 1,
+        borderColor: 'goldenrod'
+      }]
+    };
+    new Chart(document.getElementById("trzbyChart"), {
+      type: 'bar',
+      data: chartData,
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    window.addEventListener("load", () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("save")) {
+        const novy = JSON.parse(params.get("save"));
+        data.push(novy);
+        localStorage.setItem("vypocty", JSON.stringify(data));
+        refreshTable();
+      }
+    });
+  </script>
+</body>
+</html>
